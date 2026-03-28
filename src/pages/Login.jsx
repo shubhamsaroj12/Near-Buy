@@ -2,9 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/logo.svg";
 import axios from "axios";
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { API_BASE_URL } from "../config/api";
 
 export default function Login() {
   const navigate = useNavigate();
