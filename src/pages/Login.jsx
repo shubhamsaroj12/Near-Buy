@@ -16,6 +16,16 @@ export default function Login() {
   const [showReset, setShowReset] = useState(false);
   const [newPassword, setNewPassword] = useState("");
 
+  const redirectByRole = (user) => {
+    if (user.role === "admin") {
+      navigate("/admin");
+    } else if (user.role === "seller") {
+      navigate("/seller");
+    } else {
+      navigate("/");
+    }
+  };
+
   // 🔐 Login / Signup
   const handleSubmit = async () => {
     const normalizedEmail = email.trim().toLowerCase();
@@ -32,29 +42,18 @@ export default function Login() {
         });
 
         alert("Signup successful ✅");
-        setIsSignup(false);
-      } else {
-        // 👉 Login
-        const res = await apiClient.post("/api/auth/login", {
-          email: normalizedEmail,
-          password,
-        });
-
-        // Save data
-        localStorage.setItem("token", res.data.token);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
-
-        alert("Login successful 🎉");
-
-        // Redirect based on role
-        if (res.data.user.role === "admin") {
-          navigate("/admin");
-        } else if (res.data.user.role === "seller") {
-          navigate("/seller");
-        } else {
-          navigate("/");
-        }
       }
+
+      const res = await apiClient.post("/api/auth/login", {
+        email: normalizedEmail,
+        password,
+      });
+
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+
+      alert(isSignup ? "Account ready 🎉" : "Login successful 🎉");
+      redirectByRole(res.data.user);
     } catch (err) {
       alert(
         getApiErrorMessage(
