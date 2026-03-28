@@ -51,6 +51,15 @@ export default function Navbar({ cart }) {
             </span>
           )}
 
+          {user?.role === "seller" && (
+            <span
+              onClick={() => navigate("/seller")}
+              className="cursor-pointer hover:text-blue-500"
+            >
+              Seller
+            </span>
+          )}
+
           {/* User */}
           {user ? (
             <div className="flex items-center gap-3">
@@ -92,11 +101,15 @@ export default function Navbar({ cart }) {
       {open && (
         <div className="flex flex-col mt-3 gap-2 md:hidden">
 
-          <span onClick={() => navigate("/Home")}>Home</span>
+          <span onClick={() => navigate("/")}>Home</span>
           <span onClick={() => navigate("/cart")}>Cart</span>
 
           {user?.role === "admin" && (
             <span onClick={() => navigate("/admin")}>Admin</span>
+          )}
+
+          {user?.role === "seller" && (
+            <span onClick={() => navigate("/seller")}>Seller</span>
           )}
 
           {user ? (

@@ -4,6 +4,7 @@ import { Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
+import SellerRoute from "./components/SellerRoute";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -54,9 +55,9 @@ export default function App() {
         <Route
           path="/seller"
           element={
-            <ProtectedRoute>
+            <SellerRoute>
               <SellerDashboard />
-            </ProtectedRoute>
+            </SellerRoute>
           }
         />
 
