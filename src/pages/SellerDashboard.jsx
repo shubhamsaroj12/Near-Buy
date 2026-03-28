@@ -22,6 +22,47 @@ const categories = [
   "Other",
 ];
 
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = src;
+  });
+}
+
+async function compressImage(file) {
+  const originalDataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+  if (typeof originalDataUrl !== "string") {
+    throw new Error("Image read nahi ho paayi");
+  }
+
+  const image = await loadImage(originalDataUrl);
+  const maxWidth = 1280;
+  const scale = Math.min(1, maxWidth / image.width);
+  const width = Math.max(1, Math.round(image.width * scale));
+  const height = Math.max(1, Math.round(image.height * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return originalDataUrl;
+  }
+
+  context.drawImage(image, 0, 0, width, height);
+
+  return canvas.toDataURL("image/jpeg", 0.72);
+}
+
 export default function SellerDashboard() {
   const user = JSON.parse(localStorage.getItem("user"));
   const sellerName = user?.name || "Seller";
@@ -31,6 +72,7 @@ export default function SellerDashboard() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [imagePreview, setImagePreview] = useState("");
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
 
   const loadProducts = async () => {
     try {
@@ -78,15 +120,19 @@ export default function SellerDashboard() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result;
-      if (typeof dataUrl === "string") {
+    setIsProcessingImage(true);
+
+    compressImage(file)
+      .then((dataUrl) => {
         setForm((prev) => ({ ...prev, image: dataUrl }));
         setImagePreview(dataUrl);
-      }
-    };
-    reader.readAsDataURL(file);
+      })
+      .catch(() => {
+        alert("Photo process nahi ho paayi. Dobara try karo.");
+      })
+      .finally(() => {
+        setIsProcessingImage(false);
+      });
   };
 
   const handleSubmit = async (e) => {
@@ -268,12 +314,22 @@ export default function SellerDashboard() {
               </div>
             )}
 
+            {isProcessingImage && (
+              <p className="mt-3 text-sm text-slate-500">
+                Photo optimize ho rahi hai...
+              </p>
+            )}
+
             <button
               type="submit"
-              disabled={isSaving}
+              disabled={isSaving || isProcessingImage}
               className="mt-5 rounded-xl bg-slate-900 px-5 py-3 font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isSaving ? "Saving..." : "Add Product"}
+              {isProcessingImage
+                ? "Preparing photo..."
+                : isSaving
+                  ? "Saving..."
+                  : "Add Product"}
             </button>
           </form>
 
