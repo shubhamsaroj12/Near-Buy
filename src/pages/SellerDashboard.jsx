@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { API_BASE_URL } from "../config/api";
+import apiClient from "../lib/apiClient";
+import getApiErrorMessage from "../lib/getApiErrorMessage";
 
 const initialForm = {
   name: "",
@@ -34,10 +34,10 @@ export default function SellerDashboard() {
 
   const loadProducts = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/products`);
+      const res = await apiClient.get("/api/products");
       setProducts(res.data || []);
-    } catch {
-      alert("Products load nahi ho paaye");
+    } catch (err) {
+      alert(getApiErrorMessage(err, "Products load nahi ho paaye"));
     } finally {
       setIsLoading(false);
     }
@@ -110,7 +110,7 @@ export default function SellerDashboard() {
         ],
       };
 
-      const res = await axios.post(`${API_BASE_URL}/api/products`, payload);
+      const res = await apiClient.post("/api/products", payload);
       setProducts((prev) => {
         const remaining = prev.filter(
           (item) => item._id !== res.data._id && item.name !== res.data.name
@@ -121,7 +121,7 @@ export default function SellerDashboard() {
       setImagePreview("");
       alert("Product add ho gaya");
     } catch (err) {
-      alert(err.response?.data?.msg || "Product save nahi hua");
+      alert(getApiErrorMessage(err, "Product save nahi hua"));
     } finally {
       setIsSaving(false);
     }

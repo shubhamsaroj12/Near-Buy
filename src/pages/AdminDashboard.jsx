@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { API_BASE_URL } from "../config/api";
+import apiClient from "../lib/apiClient";
+import getApiErrorMessage from "../lib/getApiErrorMessage";
 
 export default function AdminDashboard() {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -13,14 +13,14 @@ export default function AdminDashboard() {
 
     try {
       const [usersRes, productsRes] = await Promise.all([
-        axios.get(`${API_BASE_URL}/api/auth/users`),
-        axios.get(`${API_BASE_URL}/api/products`),
+        apiClient.get("/api/auth/users"),
+        apiClient.get("/api/products"),
       ]);
 
       setUsers(usersRes.data || []);
       setProducts(productsRes.data || []);
-    } catch {
-      alert("Admin dashboard data load nahi hua");
+    } catch (err) {
+      alert(getApiErrorMessage(err, "Admin dashboard data load nahi hua"));
     } finally {
       setIsLoading(false);
     }

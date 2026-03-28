@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/logo.svg";
-import axios from "axios";
-import { API_BASE_URL } from "../config/api";
+import apiClient from "../lib/apiClient";
+import getApiErrorMessage from "../lib/getApiErrorMessage";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -18,12 +18,15 @@ export default function Login() {
 
   // 🔐 Login / Signup
   const handleSubmit = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedName = name.trim();
+
     try {
       if (isSignup) {
         // 👉 Signup
-        await axios.post(`${API_BASE_URL}/api/auth/signup`, {
-          name,
-          email,
+        await apiClient.post("/api/auth/signup", {
+          name: normalizedName,
+          email: normalizedEmail,
           password,
           role,
         });
@@ -32,8 +35,8 @@ export default function Login() {
         setIsSignup(false);
       } else {
         // 👉 Login
-        const res = await axios.post(`${API_BASE_URL}/api/auth/login`, {
-          email,
+        const res = await apiClient.post("/api/auth/login", {
+          email: normalizedEmail,
           password,
         });
 
@@ -53,7 +56,12 @@ export default function Login() {
         }
       }
     } catch (err) {
-      alert(err.response?.data?.msg || "Something went wrong");
+      alert(
+        getApiErrorMessage(
+          err,
+          "Login/signup me problem aayi. Dobara try karo."
+        )
+      );
     }
   };
 
@@ -102,6 +110,7 @@ export default function Login() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full border p-2 mb-3 rounded focus:outline-blue-500"
+            autoCapitalize="words"
           />
         )}
 
@@ -112,6 +121,9 @@ export default function Login() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="w-full border p-2 mb-3 rounded focus:outline-blue-500"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck="false"
         />
 
         {/* Password */}
@@ -121,6 +133,8 @@ export default function Login() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="w-full border p-2 mb-3 rounded focus:outline-blue-500"
+          autoCapitalize="none"
+          autoCorrect="off"
         />
 
         {/* Forgot Password */}
@@ -143,15 +157,20 @@ export default function Login() {
     <button
       onClick={async () => {
         try {
-          await axios.post(`${API_BASE_URL}/api/auth/reset-password`, {
-            email,
+          await apiClient.post("/api/auth/reset-password", {
+            email: email.trim().toLowerCase(),
             newPassword,
           });
 
           alert("Password updated ✅");
           setShowReset(false);
-        } catch {
-          alert("Error resetting password");
+        } catch (err) {
+          alert(
+            getApiErrorMessage(
+              err,
+              "Password reset nahi hua. Email aur network check karo."
+            )
+          );
         }
       }}
       className="w-full bg-green-500 text-white py-2 rounded"

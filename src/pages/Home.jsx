@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import apiClient from "../lib/apiClient";
 import Carousel from "../components/Carousel";
-import { API_BASE_URL } from "../config/api";
 
 const demoProducts = [
   {
@@ -117,7 +116,7 @@ export default function Home({ setCart }) {
   useEffect(() => {
     async function loadProducts() {
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/products`);
+        const res = await apiClient.get("/api/products");
         if (Array.isArray(res.data) && res.data.length > 0) {
           setProducts(res.data);
         }
