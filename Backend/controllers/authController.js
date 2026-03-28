@@ -134,3 +134,24 @@ exports.resetPassword = async (req, res) => {
     res.status(500).json({ msg: "Reset password failed", error: error.message });
   }
 };
+
+// 🔹 GET USERS
+exports.getUsers = async (req, res) => {
+  try {
+    if (req.app.locals.useFileDb) {
+      const users = await getUsers();
+      return res.json(
+        users.map((user) => {
+          const safeUser = { ...user };
+          delete safeUser.password;
+          return safeUser;
+        })
+      );
+    }
+
+    const users = await User.find({}, "-password").sort({ _id: -1 });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ msg: "Users fetch failed", error: error.message });
+  }
+};
