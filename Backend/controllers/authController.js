@@ -1,11 +1,31 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+const { getUsers, saveUsers } = require("../lib/fileStore");
 
 // 🔹 SIGNUP
 exports.signup = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
+
+    if (req.app.locals.useFileDb) {
+      const users = await getUsers();
+      const exist = users.find((user) => user.email === email);
+      if (exist) return res.status(400).json({ msg: "User already exists" });
+
+      const hashed = await bcrypt.hash(password, 10);
+      users.push({
+        _id: crypto.randomUUID(),
+        name,
+        email,
+        password: hashed,
+        role,
+      });
+
+      await saveUsers(users);
+      return res.json({ msg: "Signup successful (local storage mode)" });
+    }
 
     const exist = await User.findOne({ email });
     if (exist) return res.status(400).json({ msg: "User already exists" });
@@ -35,6 +55,29 @@ exports.login = async (req, res) => {
     }
 
     const { email, password } = req.body;
+
+    if (req.app.locals.useFileDb) {
+      const users = await getUsers();
+      const user = users.find((item) => item.email === email);
+      if (!user) return res.status(400).json({ msg: "User not found" });
+
+      const match = await bcrypt.compare(password, user.password);
+      if (!match) return res.status(400).json({ msg: "Wrong password" });
+
+      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+        expiresIn: "7d",
+      });
+
+      return res.json({
+        token,
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+      });
+    }
 
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ msg: "User not found" });
@@ -68,6 +111,16 @@ exports.resetPassword = async (req, res) => {
       return res
         .status(400)
         .json({ msg: "New password must be at least 6 characters long" });
+    }
+
+    if (req.app.locals.useFileDb) {
+      const users = await getUsers();
+      const userIndex = users.findIndex((user) => user.email === email);
+      if (userIndex === -1) return res.status(404).json({ msg: "User not found" });
+
+      users[userIndex].password = await bcrypt.hash(newPassword, 10);
+      await saveUsers(users);
+      return res.json({ msg: "Password updated successfully" });
     }
 
     const user = await User.findOne({ email });

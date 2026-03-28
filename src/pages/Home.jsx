@@ -17,7 +17,7 @@ function getBestShop(shops = []) {
   }, null);
 }
 
-export default function Home({cart, setCart}) {
+export default function Home({ setCart }) {
   const [selected, setSelected] = useState(null);
   const [location, setLocation] = useState("Fetching...");
 

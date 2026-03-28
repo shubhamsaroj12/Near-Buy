@@ -15,7 +15,7 @@ export default function Carousel() {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [banners.length]);
 
   return (
     <div className="w-full h-40 sm:h-52 md:h-64 overflow-hidden rounded-lg mb-4">

@@ -59,11 +59,6 @@ export default function Login() {
     }
   };
 
-  // 🔁 Toggle
-  const toggleMode = () => {
-    setIsSignup(!isSignup);
-  };
-
   return (
     <div className="min-h-screen flex justify-center items-center bg-gradient-to-red from-blue-500 to-purple-600">
       <div className="bg-white p-6 rounded-xl shadow w-80">
@@ -132,9 +127,6 @@ export default function Login() {
 
         {/* Forgot Password */}
         {!isSignup && (
-          // <p className="text-blue-500 text-sm cursor-pointer mb-3 hover:underline">
-          //   Forgot Password?
-          //  </p>
           <p
             onClick={() => setShowReset(true)}
             className="text-blue-500 text-sm cursor-pointer mb-3 hover:underline"
@@ -160,7 +152,7 @@ export default function Login() {
 
           alert("Password updated ✅");
           setShowReset(false);
-        } catch (err) {
+        } catch {
           alert("Error resetting password");
         }
       }}
