@@ -4,11 +4,23 @@ import { API_BASE_URL } from "../config/api";
 
 const initialForm = {
   name: "",
+  category: "Electronics",
   image: "",
   price: "",
   dist: "",
   rating: "",
 };
+
+const categories = [
+  "Fashion",
+  "Electronics",
+  "Grocery",
+  "Beauty",
+  "Home",
+  "Sports",
+  "Books",
+  "Other",
+];
 
 export default function SellerDashboard() {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -84,6 +96,7 @@ export default function SellerDashboard() {
     try {
       const payload = {
         name: form.name,
+        category: form.category,
         image:
           form.image ||
           "https://images.unsplash.com/photo-1483985988355-763728e1935b",
@@ -172,6 +185,18 @@ export default function SellerDashboard() {
                 className="rounded-xl border border-slate-200 p-3 outline-none focus:border-orange-400"
                 required
               />
+              <select
+                name="category"
+                value={form.category}
+                onChange={handleChange}
+                className="rounded-xl border border-slate-200 p-3 outline-none focus:border-orange-400"
+              >
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
               <input
                 name="image"
                 value={form.image}
@@ -319,6 +344,9 @@ export default function SellerDashboard() {
                       <h3 className="text-lg font-semibold text-slate-800">
                         {product.name}
                       </h3>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {product.category || "Other"}
+                      </p>
                       <div className="mt-3 flex items-center justify-between text-sm text-slate-600">
                         <span>Price</span>
                         <span className="font-semibold text-emerald-600">

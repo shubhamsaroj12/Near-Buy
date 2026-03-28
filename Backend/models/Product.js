@@ -9,6 +9,7 @@ const shopSchema = new mongoose.Schema({
 
 const productSchema = new mongoose.Schema({
   name: String,
+  category: String,
   image: String,
   shops: [shopSchema],
 });

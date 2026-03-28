@@ -6,6 +6,7 @@ import { API_BASE_URL } from "../config/api";
 const demoProducts = [
   {
     name: "Wireless Earbuds",
+    category: "Electronics",
     image: "https://images.unsplash.com/photo-1585386959984-a4155224a1ad",
     shops: [
       { name: "Amazon", price: 999, dist: 2, rating: 4.5 },
@@ -15,6 +16,7 @@ const demoProducts = [
   },
   {
     name: "Headphones",
+    category: "Electronics",
     image: "https://images.unsplash.com/photo-1518444065439-e933c06ce9cd",
     shops: [
       { name: "Amazon", price: 1499, dist: 2.5, rating: 4.6 },
@@ -24,6 +26,7 @@ const demoProducts = [
   },
   {
     name: "Smart Watch",
+    category: "Electronics",
     image: "https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b",
     shops: [
       { name: "Amazon", price: 1999, dist: 2, rating: 4.4 },
@@ -33,6 +36,7 @@ const demoProducts = [
   },
   {
     name: "Running Shoes",
+    category: "Fashion",
     image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff",
     shops: [
       { name: "Nike", price: 2499, dist: 4, rating: 4.6 },
@@ -42,6 +46,7 @@ const demoProducts = [
   },
   {
     name: "Laptop",
+    category: "Electronics",
     image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8",
     shops: [
       { name: "Amazon", price: 55999, dist: 5, rating: 4.7 },
@@ -51,6 +56,7 @@ const demoProducts = [
   },
   {
     name: "Smartphone",
+    category: "Electronics",
     image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9",
     shops: [
       { name: "Samsung Store", price: 20999, dist: 2, rating: 4.5 },
@@ -58,6 +64,18 @@ const demoProducts = [
       { name: "Flipkart", price: 19500, dist: 2.5, rating: 4.3 },
     ],
   },
+];
+
+const categories = [
+  "All",
+  "Fashion",
+  "Electronics",
+  "Grocery",
+  "Beauty",
+  "Home",
+  "Sports",
+  "Books",
+  "Other",
 ];
 
 function getBestShop(shops = []) {
@@ -81,6 +99,7 @@ export default function Home({ setCart }) {
   const [location, setLocation] = useState("Fetching...");
   const [products, setProducts] = useState(demoProducts);
   const [search, setSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState("All");
 
   // 📍 Get User Location
   useEffect(() => {
@@ -110,9 +129,16 @@ export default function Home({ setCart }) {
     loadProducts();
   }, []);
 
-  const filteredProducts = products.filter((product) =>
-    product.name.toLowerCase().includes(search.trim().toLowerCase())
-  );
+  const filteredProducts = products.filter((product) => {
+    const matchesSearch = product.name
+      .toLowerCase()
+      .includes(search.trim().toLowerCase());
+    const matchesCategory =
+      activeCategory === "All" ||
+      (product.category || "Other").toLowerCase() === activeCategory.toLowerCase();
+
+    return matchesSearch && matchesCategory;
+  });
 
   // 📦 PRODUCT DETAIL PAGE
   if (selected) {
@@ -183,13 +209,18 @@ export default function Home({ setCart }) {
       {/* Categories */}
       <h2 className="font-semibold mb-3">Categories</h2>
       <div className="flex gap-3 mb-5 overflow-x-auto">
-        {["Fashion", "Electronics", "Grocery", "Beauty"].map((c) => (
-          <div
+        {categories.map((c) => (
+          <button
             key={c}
-            className="bg-white px-4 py-2 rounded-full shadow text-sm"
+            onClick={() => setActiveCategory(c)}
+            className={`rounded-full px-4 py-2 text-sm shadow transition ${
+              activeCategory === c
+                ? "bg-slate-900 text-white"
+                : "bg-white text-slate-700"
+            }`}
           >
             {c}
-          </div>
+          </button>
         ))}
       </div>
 
@@ -222,6 +253,9 @@ export default function Home({ setCart }) {
               <h3 className="text-sm font-semibold truncate">
                 {p.name}
               </h3>
+              <p className="text-xs text-slate-500">
+                {p.category || "Other"}
+              </p>
 
               {/* Price + Shop */}
               <div className="flex justify-between text-xs text-gray-500 mt-1">

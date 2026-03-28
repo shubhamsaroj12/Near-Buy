@@ -20,6 +20,7 @@ exports.getProducts = async (req, res) => {
 // ADD product
 exports.addProduct = async (req, res) => {
   const productName = req.body.name?.trim();
+  const productCategory = req.body.category?.trim() || "Other";
   const incomingShop = req.body.shops?.[0];
 
   if (!productName || !incomingShop?.name) {
@@ -48,6 +49,7 @@ exports.addProduct = async (req, res) => {
       products[existingIndex] = {
         ...existingProduct,
         name: productName,
+        category: productCategory,
         image: req.body.image || existingProduct.image,
         shops: nextShops,
       };
@@ -59,6 +61,7 @@ exports.addProduct = async (req, res) => {
     const newProduct = {
       _id: crypto.randomUUID(),
       name: productName,
+      category: productCategory,
       image: req.body.image,
       shops: [incomingShop],
     };
@@ -83,6 +86,7 @@ exports.addProduct = async (req, res) => {
     }
 
     existingProduct.name = productName;
+    existingProduct.category = productCategory;
     if (req.body.image) {
       existingProduct.image = req.body.image;
     }
@@ -93,6 +97,7 @@ exports.addProduct = async (req, res) => {
 
   const newProduct = new Product({
     name: productName,
+    category: productCategory,
     image: req.body.image,
     shops: [incomingShop],
   });
