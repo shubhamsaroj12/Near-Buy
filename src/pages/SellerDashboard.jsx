@@ -107,8 +107,8 @@ export default function SellerDashboard() {
       setForm(initialForm);
       setImagePreview("");
       alert("Product add ho gaya");
-    } catch {
-      alert("Product save nahi hua");
+    } catch (err) {
+      alert(err.response?.data?.msg || "Product save nahi hua");
     } finally {
       setIsSaving(false);
     }
@@ -184,6 +184,16 @@ export default function SellerDashboard() {
                 <input
                   type="file"
                   accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </label>
+              <label className="flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-cyan-300 bg-cyan-50 p-3 text-sm font-medium text-cyan-700 transition hover:bg-cyan-100">
+                Capture From Camera
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
                   onChange={handleFileChange}
                   className="hidden"
                 />
