@@ -18,6 +18,7 @@ export default function SellerDashboard() {
   const [form, setForm] = useState(initialForm);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [imagePreview, setImagePreview] = useState("");
 
   const loadProducts = async () => {
     try {
@@ -55,6 +56,25 @@ export default function SellerDashboard() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+
+    if (name === "image" && value.trim()) {
+      setImagePreview(value.trim());
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      if (typeof dataUrl === "string") {
+        setForm((prev) => ({ ...prev, image: dataUrl }));
+        setImagePreview(dataUrl);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e) => {
@@ -78,8 +98,14 @@ export default function SellerDashboard() {
       };
 
       const res = await axios.post(`${API_BASE_URL}/api/products`, payload);
-      setProducts((prev) => [res.data, ...prev]);
+      setProducts((prev) => {
+        const remaining = prev.filter(
+          (item) => item._id !== res.data._id && item.name !== res.data.name
+        );
+        return [res.data, ...remaining];
+      });
       setForm(initialForm);
+      setImagePreview("");
       alert("Product add ho gaya");
     } catch {
       alert("Product save nahi hua");
@@ -153,6 +179,15 @@ export default function SellerDashboard() {
                 placeholder="Image URL (optional)"
                 className="rounded-xl border border-slate-200 p-3 outline-none focus:border-orange-400"
               />
+              <label className="flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-orange-300 bg-orange-50 p-3 text-sm font-medium text-orange-700 transition hover:bg-orange-100">
+                Upload Product Photo
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </label>
               <input
                 name="price"
                 type="number"
@@ -187,6 +222,16 @@ export default function SellerDashboard() {
                 required
               />
             </div>
+
+            {imagePreview && (
+              <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200">
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="h-48 w-full object-cover"
+                />
+              </div>
+            )}
 
             <button
               type="submit"
