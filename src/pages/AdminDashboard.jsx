@@ -1,119 +1,39 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import logo from "../assets/logo.svg";
-
-export default function Navbar({ cart }) {
-  const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
-
+export default function AdminDashboard() {
   const user = JSON.parse(localStorage.getItem("user"));
 
   return (
-    <div className="sticky top-0 z-50 backdrop-blur-lg bg-white/30 px-4 py-3 shadow">
+    <div className="p-6 pt-20">
+      <h1 className="text-3xl font-bold text-slate-800">Admin Dashboard</h1>
+      <p className="mt-2 text-slate-600">
+        Welcome back{user?.name ? `, ${user.name}` : ""}.
+      </p>
 
-      <div className="flex justify-between items-center">
-
-        {/* Logo */}
-        <img
-          src={logo}
-          className="h-10 cursor-pointer"
-          onClick={() => navigate("/")}
-        />
-
-        {/* Desktop Menu */}
-        <div className="hidden md:flex items-center gap-6">
-
-          <span
-            onClick={() => navigate("/")}
-            className="cursor-pointer hover:text-blue-500"
-          >
-            Home
-          </span>
-
-          <span
-            onClick={() => navigate("/cart")}
-            className="cursor-pointer hover:text-blue-500 relative"
-          >
-            Cart 🛒
-            {cart?.length > 0 && (
-              <span className="absolute -top-2 -right-3 bg-red-500 text-white text-xs px-1 rounded-full">
-                {cart.length}
-              </span>
-            )}
-          </span>
-
-          {user?.role === "admin" && (
-            <span
-              onClick={() => navigate("/admin")}
-              className="cursor-pointer hover:text-blue-500"
-            >
-              Admin
-            </span>
-          )}
-
-          {/* User */}
-          {user ? (
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-semibold">
-                👋 {user.name}
-              </span>
-
-              <button
-                onClick={() => {
-                  localStorage.removeItem("token");
-                  localStorage.removeItem("user");
-                  window.location.href = "/login";
-                }}
-                className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-              >
-                Logout
-              </button>
-            </div>
-          ) : (
-            <span
-              onClick={() => navigate("/login")}
-              className="cursor-pointer hover:text-blue-500"
-            >
-              Login
-            </span>
-          )}
+      <div className="mt-6 grid gap-4 md:grid-cols-3">
+        <div className="rounded-2xl bg-white p-5 shadow">
+          <p className="text-sm text-slate-500">Access Level</p>
+          <p className="mt-2 text-xl font-semibold text-slate-800">Admin</p>
         </div>
 
-        {/* Mobile Menu */}
-        <div
-          className="md:hidden cursor-pointer"
-          onClick={() => setOpen(!open)}
-        >
-          ☰
+        <div className="rounded-2xl bg-white p-5 shadow">
+          <p className="text-sm text-slate-500">User Email</p>
+          <p className="mt-2 break-all text-xl font-semibold text-slate-800">
+            {user?.email || "Not available"}
+          </p>
+        </div>
+
+        <div className="rounded-2xl bg-white p-5 shadow">
+          <p className="text-sm text-slate-500">Status</p>
+          <p className="mt-2 text-xl font-semibold text-emerald-600">Active</p>
         </div>
       </div>
 
-      {/* Mobile Dropdown */}
-      {open && (
-        <div className="flex flex-col mt-3 gap-2 md:hidden">
-
-          <span onClick={() => navigate("/")}>Home</span>
-          <span onClick={() => navigate("/cart")}>Cart</span>
-
-          {user?.role === "admin" && (
-            <span onClick={() => navigate("/admin")}>Admin</span>
-          )}
-
-          {user ? (
-            <button
-              onClick={() => {
-                localStorage.clear();
-                navigate("/login");
-              }}
-              className="text-red-500"
-            >
-              Logout
-            </button>
-          ) : (
-            <span onClick={() => navigate("/login")}>Login</span>
-          )}
-        </div>
-      )}
+      <div className="mt-6 rounded-2xl bg-white p-5 shadow">
+        <h2 className="text-xl font-semibold text-slate-800">Project Notes</h2>
+        <p className="mt-3 text-slate-600">
+          This panel is ready for admin-only actions such as managing users,
+          products, and reports as the project grows.
+        </p>
+      </div>
     </div>
   );
 }

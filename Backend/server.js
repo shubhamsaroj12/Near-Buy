@@ -5,12 +5,22 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 
 const app = express();
+const PORT = process.env.PORT || 5000;
+const allowedOrigins = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(",").map((origin) => origin.trim())
+  : "*";
 
-app.use(cors());
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // ROUTES
 app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/products", require("./routes/productRoutes"));
 
 // DB CONNECT
 mongoose
@@ -23,7 +33,7 @@ app.get("/", (req, res) => {
   res.send("API Running ");
 });
 
-app.listen(5000, () => {
-  console.log("Server running on http://localhost:5000 ");
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
 

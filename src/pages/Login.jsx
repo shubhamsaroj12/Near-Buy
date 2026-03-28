@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import logo from "../assets/logo.svg";
 import axios from "axios";
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 export default function Login() {
   const navigate = useNavigate();
 
@@ -20,7 +23,7 @@ export default function Login() {
     try {
       if (isSignup) {
         // 👉 Signup
-        await axios.post("http://localhost:5000/api/auth/signup", {
+        await axios.post(`${API_BASE_URL}/api/auth/signup`, {
           name,
           email,
           password,
@@ -31,7 +34,7 @@ export default function Login() {
         setIsSignup(false);
       } else {
         // 👉 Login
-        const res = await axios.post("http://localhost:5000/api/auth/login", {
+        const res = await axios.post(`${API_BASE_URL}/api/auth/login`, {
           email,
           password,
         });
@@ -150,7 +153,7 @@ export default function Login() {
     <button
       onClick={async () => {
         try {
-          await axios.post("http://localhost:5000/api/auth/reset-password", {
+          await axios.post(`${API_BASE_URL}/api/auth/reset-password`, {
             email,
             newPassword,
           });

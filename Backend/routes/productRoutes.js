@@ -1,13 +1,9 @@
-import { Navigate } from "react-router-dom";
+const router = require("express").Router();
+const { getProducts, addProduct } = require("../controllers/productController");
 
-export default function ProtectedRoute({ children }) {
-  const token = localStorage.getItem("token");
+router.get("/", getProducts);
+router.post("/", addProduct);
 
-  if (!token) {
-    return <Navigate to="/login" />;
-  }
-
-  return children;
-}
+module.exports = router;
 
 

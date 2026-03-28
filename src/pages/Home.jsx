@@ -1,6 +1,22 @@
 import { useState, useEffect } from "react";
 import Carousel from "../components/Carousel";
 
+function getBestShop(shops = []) {
+  return shops.reduce((best, current) => {
+    if (!best) return current;
+
+    if (current.price < best.price) {
+      return current;
+    }
+
+    if (current.price === best.price && current.rating > best.rating) {
+      return current;
+    }
+
+    return best;
+  }, null);
+}
+
 export default function Home({cart, setCart}) {
   const [selected, setSelected] = useState(null);
   const [location, setLocation] = useState("Fetching...");
