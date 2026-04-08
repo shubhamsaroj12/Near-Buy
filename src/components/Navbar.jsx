@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import logo from "../assets/logo.svg";
+import BrandLogo from "./BrandLogo";
 
 export default function Navbar({ cart }) {
   const navigate = useNavigate();
@@ -9,34 +9,34 @@ export default function Navbar({ cart }) {
   const user = JSON.parse(localStorage.getItem("user"));
 
   return (
-    <div className="sticky top-0 z-50 backdrop-blur-lg bg-white/30 px-4 py-3 shadow">
+    <div className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/85 px-4 py-3 shadow-sm backdrop-blur-lg">
 
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
 
         {/* Logo */}
-        <img
-          src={logo}
-          className="h-10 cursor-pointer"
+        <BrandLogo
+          size="sm"
           onClick={() => navigate("/")}
+          className="cursor-pointer"
         />
 
         {/* Desktop Menu */}
-        <div className="hidden md:flex items-center gap-6">
+        <div className="hidden items-center gap-6 md:flex">
 
           <span
             onClick={() => navigate("/")}
-            className="cursor-pointer hover:text-blue-500"
+            className="cursor-pointer text-slate-700 transition hover:text-sky-600"
           >
             Home
           </span>
 
           <span
             onClick={() => navigate("/cart")}
-            className="cursor-pointer hover:text-blue-500 relative"
+            className="relative cursor-pointer text-slate-700 transition hover:text-sky-600"
           >
             Cart 🛒
             {cart?.length > 0 && (
-              <span className="absolute -top-2 -right-3 bg-red-500 text-white text-xs px-1 rounded-full">
+              <span className="absolute -right-3 -top-2 min-w-5 rounded-full bg-rose-500 px-1 text-center text-xs text-white">
                 {cart.length}
               </span>
             )}
@@ -45,16 +45,16 @@ export default function Navbar({ cart }) {
           {user?.role === "admin" && (
             <span
               onClick={() => navigate("/admin")}
-              className="cursor-pointer hover:text-blue-500"
+              className="cursor-pointer text-slate-700 transition hover:text-sky-600"
             >
-              Admin
+              Admin Panel
             </span>
           )}
 
           {user?.role === "seller" && (
             <span
               onClick={() => navigate("/seller")}
-              className="cursor-pointer hover:text-blue-500"
+              className="cursor-pointer text-slate-700 transition hover:text-sky-600"
             >
               Seller
             </span>
@@ -63,7 +63,7 @@ export default function Navbar({ cart }) {
           {/* User */}
           {user ? (
             <div className="flex items-center gap-3">
-              <span className="text-sm font-semibold">
+              <span className="text-sm font-semibold text-slate-800">
                 👋 {user.name}
               </span>
 
@@ -73,7 +73,7 @@ export default function Navbar({ cart }) {
                   localStorage.removeItem("user");
                   window.location.href = "/login";
                 }}
-                className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                className="rounded-xl bg-rose-500 px-4 py-2 text-white transition hover:bg-rose-600"
               >
                 Logout
               </button>
@@ -81,7 +81,7 @@ export default function Navbar({ cart }) {
           ) : (
             <span
               onClick={() => navigate("/login")}
-              className="cursor-pointer hover:text-blue-500"
+              className="cursor-pointer text-slate-700 transition hover:text-sky-600"
             >
               Login
             </span>
@@ -90,7 +90,7 @@ export default function Navbar({ cart }) {
 
         {/* Mobile Menu */}
         <div
-          className="md:hidden cursor-pointer"
+          className="cursor-pointer rounded-lg border border-slate-200 px-3 py-1.5 text-slate-700 md:hidden"
           onClick={() => setOpen(!open)}
         >
           ☰
@@ -99,17 +99,25 @@ export default function Navbar({ cart }) {
 
       {/* Mobile Dropdown */}
       {open && (
-        <div className="flex flex-col mt-3 gap-2 md:hidden">
+        <div className="mt-3 flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm md:hidden">
 
-          <span onClick={() => navigate("/")}>Home</span>
-          <span onClick={() => navigate("/cart")}>Cart</span>
+          <span onClick={() => navigate("/")} className="text-slate-700">
+            Home
+          </span>
+          <span onClick={() => navigate("/cart")} className="text-slate-700">
+            Cart
+          </span>
 
           {user?.role === "admin" && (
-            <span onClick={() => navigate("/admin")}>Admin</span>
+            <span onClick={() => navigate("/admin")} className="text-slate-700">
+              Admin Panel
+            </span>
           )}
 
           {user?.role === "seller" && (
-            <span onClick={() => navigate("/seller")}>Seller</span>
+            <span onClick={() => navigate("/seller")} className="text-slate-700">
+              Seller
+            </span>
           )}
 
           {user ? (
@@ -118,12 +126,14 @@ export default function Navbar({ cart }) {
                 localStorage.clear();
                 navigate("/login");
               }}
-              className="text-red-500"
+              className="text-left text-rose-500"
             >
               Logout
             </button>
           ) : (
-            <span onClick={() => navigate("/login")}>Login</span>
+            <span onClick={() => navigate("/login")} className="text-slate-700">
+              Login
+            </span>
           )}
         </div>
       )}

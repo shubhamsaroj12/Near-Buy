@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import logo from "../assets/logo.svg";
 import apiClient from "../lib/apiClient";
 import getApiErrorMessage from "../lib/getApiErrorMessage";
+import BrandLogo from "../components/BrandLogo";
+import { OWNER_ADMIN_EMAIL } from "../config/auth";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -84,23 +85,44 @@ export default function Login() {
         </div>
 
         {/* Logo */}
-        <img src={logo} className="h-14 mx-auto mb-3" />
+        <BrandLogo size="lg" showTagline centered className="mx-auto mb-4" />
 
         {/* Title */}
         <h2 className="text-center font-bold mb-4">
           {isSignup ? "Create Account" : "Login"}
         </h2>
 
-        {/* Role */}
-        <select
-          className="w-full border p-2 mb-3 rounded focus:outline-blue-500"
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-        >
-          <option value="user">User</option>
-          <option value="seller">Seller</option>
-          <option value="admin">Admin</option>
-        </select>
+        {isSignup ? (
+          <>
+            <select
+              className="w-full border p-2 mb-3 rounded focus:outline-blue-500"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+            >
+              <option value="user">User</option>
+              <option value="seller">Seller</option>
+            </select>
+
+            {role === "seller" && (
+              <div className="mb-3 rounded-xl border border-orange-200 bg-orange-50 p-3 text-sm text-orange-900">
+                Seller login ke baad aapka <b>Seller Panel</b> yahan khulega:
+                {" "}
+                <span
+                  onClick={() => navigate("/seller")}
+                  className="cursor-pointer font-semibold underline"
+                >
+                  /seller
+                </span>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            Admin panel sirf owner account ke liye reserved hai:
+            {" "}
+            <b>{OWNER_ADMIN_EMAIL}</b>
+          </div>
+        )}
 
         {/* Name (Signup only) */}
         {isSignup && (

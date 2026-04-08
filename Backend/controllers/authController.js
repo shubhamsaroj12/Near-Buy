@@ -3,40 +3,55 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const { getUsers, saveUsers } = require("../lib/fileStore");
+const OWNER_ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "admin@nearbuy.com").trim().toLowerCase();
+
+function normalizeRole(role) {
+  return role === "seller" ? "seller" : "user";
+}
 
 // 🔹 SIGNUP
 exports.signup = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
+    const normalizedEmail = email?.trim().toLowerCase();
+    const normalizedRole = normalizeRole(role);
+
+    if (!normalizedEmail) {
+      return res.status(400).json({ msg: "Email is required" });
+    }
+
+    if (normalizedEmail === OWNER_ADMIN_EMAIL) {
+      return res.status(403).json({ msg: "This admin email is reserved" });
+    }
 
     if (req.app.locals.useFileDb) {
       const users = await getUsers();
-      const exist = users.find((user) => user.email === email);
+      const exist = users.find((user) => user.email === normalizedEmail);
       if (exist) return res.status(400).json({ msg: "User already exists" });
 
       const hashed = await bcrypt.hash(password, 10);
       users.push({
         _id: crypto.randomUUID(),
         name,
-        email,
+        email: normalizedEmail,
         password: hashed,
-        role,
+        role: normalizedRole,
       });
 
       await saveUsers(users);
       return res.json({ msg: "Signup successful (local storage mode)" });
     }
 
-    const exist = await User.findOne({ email });
+    const exist = await User.findOne({ email: normalizedEmail });
     if (exist) return res.status(400).json({ msg: "User already exists" });
 
     const hashed = await bcrypt.hash(password, 10);
 
     const user = new User({
       name,
-      email,
+      email: normalizedEmail,
       password: hashed,
-      role,
+      role: normalizedRole,
     });
 
     await user.save();
@@ -54,15 +69,19 @@ exports.login = async (req, res) => {
       return res.status(500).json({ msg: "JWT secret is not configured" });
     }
 
-    const { email, password } = req.body;
+    const normalizedEmail = req.body.email?.trim().toLowerCase();
+    const { password } = req.body;
 
     if (req.app.locals.useFileDb) {
       const users = await getUsers();
-      const user = users.find((item) => item.email === email);
+      const user = users.find((item) => item.email === normalizedEmail);
       if (!user) return res.status(400).json({ msg: "User not found" });
 
       const match = await bcrypt.compare(password, user.password);
       if (!match) return res.status(400).json({ msg: "Wrong password" });
+      if (user.role === "admin" && user.email !== OWNER_ADMIN_EMAIL) {
+        return res.status(403).json({ msg: "Unauthorized admin account" });
+      }
 
       const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
         expiresIn: "7d",
@@ -79,11 +98,14 @@ exports.login = async (req, res) => {
       });
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) return res.status(400).json({ msg: "User not found" });
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(400).json({ msg: "Wrong password" });
+    if (user.role === "admin" && user.email !== OWNER_ADMIN_EMAIL) {
+      return res.status(403).json({ msg: "Unauthorized admin account" });
+    }
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
