@@ -1,108 +1,75 @@
-const Product = require("../models/Product");
-const crypto = require("crypto");
-const { getProducts, saveProducts } = require("../lib/fileStore");
+const productService = require("../services/productService");
 
-function normalizeName(value = "") {
-  return value.trim().toLowerCase();
+function sendError(res, error, fallbackMessage) {
+  return res.status(error.status || 500).json({
+    msg: error.message || fallbackMessage,
+  });
 }
 
-// GET all products
+// GET all products with optional location, search, and comparison filters.
 exports.getProducts = async (req, res) => {
-  if (req.app.locals.useFileDb) {
-    const data = await getProducts();
+  try {
+    const data = await productService.listProducts({
+      ...req.query,
+      useFileDb: req.app.locals.useFileDb,
+    });
+
     return res.json(data);
+  } catch (error) {
+    return sendError(res, error, "Products could not be loaded");
   }
-
-  const data = await Product.find();
-  res.json(data);
 };
 
-// ADD product
+// ADD product or attach the seller's shop to an existing product.
 exports.addProduct = async (req, res) => {
-  const productName = req.body.name?.trim();
-  const productCategory = req.body.category?.trim() || "Other";
-  const incomingShop = req.body.shops?.[0];
+  try {
+    const product = await productService.createProduct(req.body, {
+      useFileDb: req.app.locals.useFileDb,
+      seller: req.user,
+    });
 
-  if (!productName || !incomingShop?.name) {
-    return res.status(400).json({ msg: "Product name and seller details are required" });
+    return res.status(201).json(product);
+  } catch (error) {
+    return sendError(res, error, "Product could not be saved");
   }
-
-  if (req.app.locals.useFileDb) {
-    const products = await getProducts();
-    const existingIndex = products.findIndex(
-      (product) => normalizeName(product.name) === normalizeName(productName)
-    );
-
-    if (existingIndex !== -1) {
-      const existingProduct = products[existingIndex];
-      const nextShops = existingProduct.shops || [];
-      const sellerShopIndex = nextShops.findIndex(
-        (shop) => shop.name === incomingShop.name
-      );
-
-      if (sellerShopIndex !== -1) {
-        nextShops[sellerShopIndex] = incomingShop;
-      } else {
-        nextShops.push(incomingShop);
-      }
-
-      products[existingIndex] = {
-        ...existingProduct,
-        name: productName,
-        category: productCategory,
-        image: req.body.image || existingProduct.image,
-        shops: nextShops,
-      };
-
-      await saveProducts(products);
-      return res.json(products[existingIndex]);
-    }
-
-    const newProduct = {
-      _id: crypto.randomUUID(),
-      name: productName,
-      category: productCategory,
-      image: req.body.image,
-      shops: [incomingShop],
-    };
-    products.push(newProduct);
-    await saveProducts(products);
-    return res.json(newProduct);
-  }
-
-  const existingProduct = await Product.findOne({
-    name: { $regex: `^${productName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" },
-  });
-
-  if (existingProduct) {
-    const sellerShopIndex = existingProduct.shops.findIndex(
-      (shop) => shop.name === incomingShop.name
-    );
-
-    if (sellerShopIndex !== -1) {
-      existingProduct.shops[sellerShopIndex] = incomingShop;
-    } else {
-      existingProduct.shops.push(incomingShop);
-    }
-
-    existingProduct.name = productName;
-    existingProduct.category = productCategory;
-    if (req.body.image) {
-      existingProduct.image = req.body.image;
-    }
-
-    await existingProduct.save();
-    return res.json(existingProduct);
-  }
-
-  const newProduct = new Product({
-    name: productName,
-    category: productCategory,
-    image: req.body.image,
-    shops: [incomingShop],
-  });
-  await newProduct.save();
-  res.json(newProduct);
 };
 
+exports.addProductReview = async (req, res) => {
+  try {
+    const product = await productService.addReview(req.params.id, req.body, {
+      useFileDb: req.app.locals.useFileDb,
+      user: req.user,
+    });
 
+    return res.status(201).json(product);
+  } catch (error) {
+    return sendError(res, error, "Review could not be saved");
+  }
+};
+
+exports.getProductReviews = async (req, res) => {
+  try {
+    const reviews = await productService.getProductReviews(
+      req.params.id,
+      req.app.locals.useFileDb
+    );
+
+    return res.json(reviews);
+  } catch (error) {
+    return sendError(res, error, "Reviews could not be loaded");
+  }
+};
+
+// DELETE product for admin, or just the seller's listing for sellers.
+exports.deleteProduct = async (req, res) => {
+  try {
+    const result = await productService.deleteProduct(req.params.id, {
+      useFileDb: req.app.locals.useFileDb,
+      user: req.user,
+    });
+
+    return res.json(result);
+  } catch (error) {
+    return sendError(res, error, "Product could not be deleted");
+  }
+};

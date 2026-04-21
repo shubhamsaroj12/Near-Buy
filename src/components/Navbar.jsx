@@ -1,12 +1,16 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import BrandLogo from "./BrandLogo";
 
 export default function Navbar({ cart }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
 
   const user = JSON.parse(localStorage.getItem("user"));
+  const isAdminPage = location.pathname.startsWith("/admin");
+  const isSellerPage = location.pathname.startsWith("/seller");
+  const canUseCart = !isAdminPage && !isSellerPage && user?.role !== "seller";
 
   return (
     <div className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/85 px-4 py-3 shadow-sm backdrop-blur-lg">
@@ -23,24 +27,28 @@ export default function Navbar({ cart }) {
         {/* Desktop Menu */}
         <div className="hidden items-center gap-6 md:flex">
 
-          <span
-            onClick={() => navigate("/")}
-            className="cursor-pointer text-slate-700 transition hover:text-sky-600"
-          >
-            Home
-          </span>
+          {!isAdminPage && (
+            <span
+              onClick={() => navigate("/")}
+              className="cursor-pointer text-slate-700 transition hover:text-sky-600"
+            >
+              Home
+            </span>
+          )}
 
-          <span
-            onClick={() => navigate("/cart")}
-            className="relative cursor-pointer text-slate-700 transition hover:text-sky-600"
-          >
-            Cart 🛒
-            {cart?.length > 0 && (
-              <span className="absolute -right-3 -top-2 min-w-5 rounded-full bg-rose-500 px-1 text-center text-xs text-white">
-                {cart.length}
-              </span>
-            )}
-          </span>
+          {canUseCart && (
+            <span
+              onClick={() => navigate("/cart")}
+              className="relative cursor-pointer text-slate-700 transition hover:text-sky-600"
+            >
+              Cart 🛒
+              {cart?.length > 0 && (
+                <span className="absolute -right-3 -top-2 min-w-5 rounded-full bg-rose-500 px-1 text-center text-xs text-white">
+                  {cart.length}
+                </span>
+              )}
+            </span>
+          )}
 
           {user?.role === "admin" && (
             <span
@@ -101,12 +109,16 @@ export default function Navbar({ cart }) {
       {open && (
         <div className="mt-3 flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm md:hidden">
 
-          <span onClick={() => navigate("/")} className="text-slate-700">
-            Home
-          </span>
-          <span onClick={() => navigate("/cart")} className="text-slate-700">
-            Cart
-          </span>
+          {!isAdminPage && (
+            <span onClick={() => navigate("/")} className="text-slate-700">
+              Home
+            </span>
+          )}
+          {canUseCart && (
+            <span onClick={() => navigate("/cart")} className="text-slate-700">
+              Cart
+            </span>
+          )}
 
           {user?.role === "admin" && (
             <span onClick={() => navigate("/admin")} className="text-slate-700">

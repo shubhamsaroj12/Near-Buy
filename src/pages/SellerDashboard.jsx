@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 import apiClient from "../lib/apiClient";
 import getApiErrorMessage from "../lib/getApiErrorMessage";
+import MapPickerModal from "../components/MapPickerModal";
 
 const initialForm = {
   name: "",
   category: "Electronics",
   image: "",
   price: "",
-  dist: "",
   rating: "",
+  latitude: "",
+  longitude: "",
+  locationLabel: "",
 };
 
 const categories = [
@@ -40,7 +43,7 @@ async function compressImage(file) {
   });
 
   if (typeof originalDataUrl !== "string") {
-    throw new Error("Image read nahi ho paayi");
+    throw new Error("The image could not be read.");
   }
 
   const image = await loadImage(originalDataUrl);
@@ -70,16 +73,22 @@ export default function SellerDashboard() {
   const [products, setProducts] = useState([]);
   const [form, setForm] = useState(initialForm);
   const [isSaving, setIsSaving] = useState(false);
+  const [deletingProductId, setDeletingProductId] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [imagePreview, setImagePreview] = useState("");
   const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const [isMapPickerOpen, setIsMapPickerOpen] = useState(false);
+  const [shopCoords, setShopCoords] = useState({
+    latitude: 28.6139,
+    longitude: 77.209,
+  });
 
   const loadProducts = async () => {
     try {
       const res = await apiClient.get("/api/products");
       setProducts(res.data || []);
     } catch (err) {
-      alert(getApiErrorMessage(err, "Products load nahi ho paaye"));
+      alert(getApiErrorMessage(err, "Products could not be loaded."));
     } finally {
       setIsLoading(false);
     }
@@ -107,6 +116,27 @@ export default function SellerDashboard() {
       ).toFixed(1)
     : "0.0";
 
+  const summaryCards = [
+    {
+      label: "Your Listings",
+      value: totalListings,
+      valueClassName: "text-slate-800",
+      href: "#your-products",
+    },
+    {
+      label: "Listed Value",
+      value: `Rs. ${totalValue}`,
+      valueClassName: "text-emerald-600",
+      href: "#your-products",
+    },
+    {
+      label: "Average Rating",
+      value: averageRating,
+      valueClassName: "text-amber-500",
+      href: "#seller-notes",
+    },
+  ];
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -128,11 +158,22 @@ export default function SellerDashboard() {
         setImagePreview(dataUrl);
       })
       .catch(() => {
-        alert("Photo process nahi ho paayi. Dobara try karo.");
+        alert("The photo could not be processed. Please try again.");
       })
       .finally(() => {
         setIsProcessingImage(false);
       });
+  };
+
+  const handleMapLocationConfirm = ({ latitude, longitude }) => {
+    setShopCoords({ latitude, longitude });
+    setForm((prev) => ({
+      ...prev,
+      latitude: String(latitude),
+      longitude: String(longitude),
+      locationLabel: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+    }));
+    setIsMapPickerOpen(false);
   };
 
   const handleSubmit = async (e) => {
@@ -150,76 +191,110 @@ export default function SellerDashboard() {
           {
             name: sellerName,
             price: Number(form.price),
-            dist: Number(form.dist),
+            dist: 0,
             rating: Number(form.rating),
+            latitude: Number(form.latitude),
+            longitude: Number(form.longitude),
+            locationLabel:
+              form.locationLabel ||
+              `${Number(form.latitude).toFixed(5)}, ${Number(form.longitude).toFixed(5)}`,
           },
         ],
       };
 
       const res = await apiClient.post("/api/products", payload);
       setProducts((prev) => {
-        const remaining = prev.filter(
-          (item) => item._id !== res.data._id && item.name !== res.data.name
-        );
-        return [res.data, ...remaining];
+        const exists = prev.some((product) => product._id === res.data._id);
+        if (exists) {
+          return prev.map((product) =>
+            product._id === res.data._id ? res.data : product
+          );
+        }
+
+        return [res.data, ...prev];
       });
       setForm(initialForm);
       setImagePreview("");
-      alert("Product add ho gaya");
+      setShopCoords({ latitude: 28.6139, longitude: 77.209 });
+      alert("Product added successfully.");
     } catch (err) {
-      alert(getApiErrorMessage(err, "Product save nahi hua"));
+      alert(getApiErrorMessage(err, "The product could not be saved."));
     } finally {
       setIsSaving(false);
     }
   };
 
+  const handleDeleteProduct = async (productId, productName) => {
+    const shouldDelete = window.confirm(
+      `Delete "${productName}" from your listings?`
+    );
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    setDeletingProductId(productId);
+
+    try {
+      await apiClient.delete(`/api/products/${productId}`);
+      setProducts((prev) => prev.filter((product) => product._id !== productId));
+      alert("Product deleted successfully.");
+    } catch (err) {
+      alert(getApiErrorMessage(err, "The product could not be deleted."));
+    } finally {
+      setDeletingProductId("");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 p-4 pt-20">
+      <MapPickerModal
+        open={isMapPickerOpen}
+        initialCoords={shopCoords}
+        onClose={() => setIsMapPickerOpen(false)}
+        onConfirm={handleMapLocationConfirm}
+      />
       <div className="mx-auto max-w-6xl">
         <div className="rounded-3xl bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400 p-6 text-white shadow-lg">
-          <p className="text-sm uppercase tracking-[0.25em] text-white/80">
-            Seller Workspace
+          <p className="text-sm tracking-[0.08em] text-white/80">
+            Seller workspace
           </p>
           <h1 className="mt-2 text-3xl font-bold">Welcome, {sellerName}</h1>
           <p className="mt-2 max-w-2xl text-sm text-white/90">
-            Apne products list karo, pricing update karo, aur ek jagah se apni
-            storefront ko manage karo.
+            List your products, update pricing, and manage your storefront from
+            one place.
           </p>
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-3">
-          <div className="rounded-2xl bg-white p-5 shadow">
-            <p className="text-sm text-slate-500">Your Listings</p>
-            <p className="mt-2 text-3xl font-bold text-slate-800">
-              {totalListings}
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-white p-5 shadow">
-            <p className="text-sm text-slate-500">Listed Value</p>
-            <p className="mt-2 text-3xl font-bold text-emerald-600">
-              Rs. {totalValue}
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-white p-5 shadow">
-            <p className="text-sm text-slate-500">Average Rating</p>
-            <p className="mt-2 text-3xl font-bold text-amber-500">
-              {averageRating}
-            </p>
-          </div>
+          {summaryCards.map((card) => (
+            <a
+              key={card.label}
+              href={card.href}
+              className="rounded-2xl bg-white p-5 shadow transition hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-orange-300"
+            >
+              <p className="text-sm text-slate-500">{card.label}</p>
+              <p className={`mt-2 text-3xl font-bold ${card.valueClassName}`}>
+                {card.value}
+              </p>
+              <p className="mt-3 text-sm font-medium text-orange-600">
+                Click to view details
+              </p>
+            </a>
+          ))}
         </div>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <form
             onSubmit={handleSubmit}
-            className="rounded-3xl bg-white p-6 shadow"
+            id="add-product"
+            className="scroll-mt-28 rounded-3xl bg-white p-6 shadow"
           >
             <h2 className="text-2xl font-semibold text-slate-800">
               Add New Product
             </h2>
             <p className="mt-2 text-sm text-slate-500">
-              Seller name automatically "{sellerName}" ke naam se save hoga.
+              The seller name will be saved automatically as "{sellerName}".
             </p>
 
             <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -269,6 +344,25 @@ export default function SellerDashboard() {
                   className="hidden"
                 />
               </label>
+              <button
+                type="button"
+                onClick={() => setIsMapPickerOpen(true)}
+                className="rounded-xl border border-dashed border-sky-300 bg-sky-50 p-3 text-sm font-medium text-sky-700 transition hover:bg-sky-100"
+              >
+                Set Shop Location From Map
+              </button>
+              <a
+                href={
+                  form.latitude && form.longitude
+                    ? `https://www.google.com/maps/search/?api=1&query=${form.latitude},${form.longitude}`
+                    : "https://www.google.com/maps"
+                }
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-center rounded-xl border border-dashed border-emerald-300 bg-emerald-50 p-3 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100"
+              >
+                Open / Search on Map
+              </a>
               <input
                 name="price"
                 type="number"
@@ -276,17 +370,6 @@ export default function SellerDashboard() {
                 value={form.price}
                 onChange={handleChange}
                 placeholder="Price"
-                className="rounded-xl border border-slate-200 p-3 outline-none focus:border-orange-400"
-                required
-              />
-              <input
-                name="dist"
-                type="number"
-                min="0"
-                step="0.1"
-                value={form.dist}
-                onChange={handleChange}
-                placeholder="Distance in km"
                 className="rounded-xl border border-slate-200 p-3 outline-none focus:border-orange-400"
                 required
               />
@@ -302,6 +385,22 @@ export default function SellerDashboard() {
                 className="rounded-xl border border-slate-200 p-3 outline-none focus:border-orange-400 md:col-span-2"
                 required
               />
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 md:col-span-2">
+                <p className="text-sm font-medium text-slate-700">Shop location</p>
+                <p className="mt-1 text-sm text-slate-500">
+                  {form.locationLabel || "No shop location selected yet."}
+                </p>
+                {form.latitude && form.longitude && (
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${form.latitude},${form.longitude}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 inline-block text-sm font-medium text-sky-600 hover:underline"
+                  >
+                    Open this selected location
+                  </a>
+                )}
+              </div>
             </div>
 
             {imagePreview && (
@@ -316,7 +415,7 @@ export default function SellerDashboard() {
 
             {isProcessingImage && (
               <p className="mt-3 text-sm text-slate-500">
-                Photo optimize ho rahi hai...
+                Optimizing photo...
               </p>
             )}
 
@@ -333,35 +432,41 @@ export default function SellerDashboard() {
             </button>
           </form>
 
-          <div className="rounded-3xl bg-white p-6 shadow">
+          <div
+            id="seller-notes"
+            className="scroll-mt-28 rounded-3xl bg-white p-6 shadow"
+          >
             <h2 className="text-2xl font-semibold text-slate-800">
               Seller Notes
             </h2>
             <div className="mt-4 space-y-4 text-sm text-slate-600">
               <div className="rounded-2xl bg-slate-50 p-4">
-                Fast tip: clear product image dene se listing zyada trustable lagti
-                hai.
+                Quick tip: a clear product image makes your listing look more
+                trustworthy.
               </div>
               <div className="rounded-2xl bg-slate-50 p-4">
-                Competitive price aur strong rating se home listing pe better
-                impression padta hai.
+                Competitive pricing and strong ratings create a better
+                impression on the home listing.
               </div>
               <div className="rounded-2xl bg-slate-50 p-4">
-                Agar Atlas down ho, tab bhi local fallback ki wajah se seller
-                testing rukegi nahi.
+                Seller testing can continue even if Atlas is down because of
+                local fallback support.
               </div>
             </div>
           </div>
         </div>
 
-        <div className="mt-6 rounded-3xl bg-white p-6 shadow">
+        <div
+          id="your-products"
+          className="mt-6 scroll-mt-28 rounded-3xl bg-white p-6 shadow"
+        >
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="text-2xl font-semibold text-slate-800">
                 Your Products
               </h2>
               <p className="mt-1 text-sm text-slate-500">
-                Sirf wo products dikh rahe hain jahan shop name "{sellerName}" hai.
+                Only the products linked to the shop name "{sellerName}" are shown here.
               </p>
             </div>
             <button
@@ -373,11 +478,10 @@ export default function SellerDashboard() {
           </div>
 
           {isLoading ? (
-            <p className="mt-5 text-slate-500">Products load ho rahe hain...</p>
+            <p className="mt-5 text-slate-500">Products are loading...</p>
           ) : sellerProducts.length === 0 ? (
             <div className="mt-5 rounded-2xl border border-dashed border-slate-300 p-6 text-center text-slate-500">
-              Abhi koi seller listing nahi hai. Pehla product add karke dashboard
-              ko active karo.
+              No seller listings are available yet. Add your first product to activate the dashboard.
             </div>
           ) : (
             <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -397,12 +501,26 @@ export default function SellerDashboard() {
                       className="h-44 w-full object-cover"
                     />
                     <div className="p-4">
-                      <h3 className="text-lg font-semibold text-slate-800">
-                        {product.name}
-                      </h3>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {product.category || "Other"}
-                      </p>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <h3 className="text-lg font-semibold text-slate-800">
+                            {product.name}
+                          </h3>
+                          <p className="mt-1 text-sm text-slate-500">
+                            {product.category || "Other"}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleDeleteProduct(product._id, product.name)
+                          }
+                          disabled={deletingProductId === product._id}
+                          className="rounded-lg bg-red-50 px-3 py-1.5 text-sm font-medium text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {deletingProductId === product._id ? "Deleting..." : "Delete"}
+                        </button>
+                      </div>
                       <div className="mt-3 flex items-center justify-between text-sm text-slate-600">
                         <span>Price</span>
                         <span className="font-semibold text-emerald-600">
@@ -417,6 +535,12 @@ export default function SellerDashboard() {
                         <span>Rating</span>
                         <span>{sellerShop?.rating}</span>
                       </div>
+                      {sellerShop?.locationLabel && (
+                        <div className="mt-2 text-sm text-slate-600">
+                          <span className="font-medium">Location:</span>{" "}
+                          {sellerShop.locationLabel}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

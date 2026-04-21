@@ -59,7 +59,7 @@ export default function Login() {
       alert(
         getApiErrorMessage(
           err,
-          "Login/signup me problem aayi. Dobara try karo."
+          "There was a problem with login or signup. Please try again."
         )
       );
     }
@@ -103,22 +103,10 @@ export default function Login() {
               <option value="seller">Seller</option>
             </select>
 
-            {role === "seller" && (
-              <div className="mb-3 rounded-xl border border-orange-200 bg-orange-50 p-3 text-sm text-orange-900">
-                Seller login ke baad aapka <b>Seller Panel</b> yahan khulega:
-                {" "}
-                <span
-                  onClick={() => navigate("/seller")}
-                  className="cursor-pointer font-semibold underline"
-                >
-                  /seller
-                </span>
-              </div>
-            )}
           </>
         ) : (
           <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-            Admin panel sirf owner account ke liye reserved hai:
+            The admin panel is reserved for the owner account only:
             {" "}
             <b>{OWNER_ADMIN_EMAIL}</b>
           </div>
@@ -183,13 +171,13 @@ export default function Login() {
             newPassword,
           });
 
-          alert("Password updated ✅");
+          alert("Password updated successfully.");
           setShowReset(false);
         } catch (err) {
           alert(
             getApiErrorMessage(
               err,
-              "Password reset nahi hua. Email aur network check karo."
+              "Password reset failed. Please check the email and your network."
             )
           );
         }

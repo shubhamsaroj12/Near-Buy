@@ -9,6 +9,18 @@ function normalizeRole(role) {
   return role === "seller" ? "seller" : "user";
 }
 
+function getSafeRole(user, email) {
+  if (user?.role === "admin" && email !== OWNER_ADMIN_EMAIL) {
+    return "user";
+  }
+
+  return user?.role || "user";
+}
+
+function isProtectedOwner(user) {
+  return user?.email?.trim?.().toLowerCase?.() === OWNER_ADMIN_EMAIL;
+}
+
 // 🔹 SIGNUP
 exports.signup = async (req, res) => {
   try {
@@ -36,6 +48,7 @@ exports.signup = async (req, res) => {
         email: normalizedEmail,
         password: hashed,
         role: normalizedRole,
+        isBlocked: false,
       });
 
       await saveUsers(users);
@@ -52,6 +65,7 @@ exports.signup = async (req, res) => {
       email: normalizedEmail,
       password: hashed,
       role: normalizedRole,
+      isBlocked: false,
     });
 
     await user.save();
@@ -76,12 +90,12 @@ exports.login = async (req, res) => {
       const users = await getUsers();
       const user = users.find((item) => item.email === normalizedEmail);
       if (!user) return res.status(400).json({ msg: "User not found" });
+      if (user.isBlocked) return res.status(403).json({ msg: "This account is blocked" });
 
       const match = await bcrypt.compare(password, user.password);
       if (!match) return res.status(400).json({ msg: "Wrong password" });
-      if (user.role === "admin" && user.email !== OWNER_ADMIN_EMAIL) {
-        return res.status(403).json({ msg: "Unauthorized admin account" });
-      }
+
+      const safeRole = getSafeRole(user, normalizedEmail);
 
       const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
         expiresIn: "7d",
@@ -93,19 +107,19 @@ exports.login = async (req, res) => {
           _id: user._id,
           name: user.name,
           email: user.email,
-          role: user.role,
+          role: safeRole,
         },
       });
     }
 
     const user = await User.findOne({ email: normalizedEmail });
     if (!user) return res.status(400).json({ msg: "User not found" });
+    if (user.isBlocked) return res.status(403).json({ msg: "This account is blocked" });
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(400).json({ msg: "Wrong password" });
-    if (user.role === "admin" && user.email !== OWNER_ADMIN_EMAIL) {
-      return res.status(403).json({ msg: "Unauthorized admin account" });
-    }
+
+    const safeRole = getSafeRole(user, normalizedEmail);
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
@@ -113,7 +127,12 @@ exports.login = async (req, res) => {
 
     res.json({
       token,
-      user,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: safeRole,
+      },
     });
   } catch (error) {
     res.status(500).json({ msg: "Login failed", error: error.message });
@@ -175,5 +194,80 @@ exports.getUsers = async (req, res) => {
     res.json(users);
   } catch (error) {
     res.status(500).json({ msg: "Users fetch failed", error: error.message });
+  }
+};
+
+exports.updateUserStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isBlocked } = req.body;
+
+    if (typeof isBlocked !== "boolean") {
+      return res.status(400).json({ msg: "isBlocked must be true or false" });
+    }
+
+    if (req.app.locals.useFileDb) {
+      const users = await getUsers();
+      const userIndex = users.findIndex((user) => user._id === id);
+      if (userIndex === -1) return res.status(404).json({ msg: "User not found" });
+      if (isProtectedOwner(users[userIndex])) {
+        return res.status(403).json({ msg: "The owner admin account cannot be modified" });
+      }
+
+      users[userIndex] = {
+        ...users[userIndex],
+        isBlocked,
+      };
+      await saveUsers(users);
+
+      const safeUser = { ...users[userIndex] };
+      delete safeUser.password;
+      return res.json(safeUser);
+    }
+
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+    if (isProtectedOwner(user)) {
+      return res.status(403).json({ msg: "The owner admin account cannot be modified" });
+    }
+
+    user.isBlocked = isBlocked;
+    await user.save();
+
+    const safeUser = user.toObject();
+    delete safeUser.password;
+    return res.json(safeUser);
+  } catch (error) {
+    res.status(500).json({ msg: "User status update failed", error: error.message });
+  }
+};
+
+exports.deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (req.app.locals.useFileDb) {
+      const users = await getUsers();
+      const targetUser = users.find((user) => user._id === id);
+      if (!targetUser) return res.status(404).json({ msg: "User not found" });
+      if (isProtectedOwner(targetUser)) {
+        return res.status(403).json({ msg: "The owner admin account cannot be deleted" });
+      }
+
+      const nextUsers = users.filter((user) => user._id !== id);
+      await saveUsers(nextUsers);
+      return res.json({ msg: "User deleted successfully" });
+    }
+
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+    if (isProtectedOwner(user)) {
+      return res.status(403).json({ msg: "The owner admin account cannot be deleted" });
+    }
+
+    await User.findByIdAndDelete(id);
+    return res.json({ msg: "User deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ msg: "User delete failed", error: error.message });
   }
 };

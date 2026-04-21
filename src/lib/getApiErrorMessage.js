@@ -4,15 +4,15 @@ export default function getApiErrorMessage(error, fallbackMessage) {
 
   const status = error?.response?.status;
   if (status === 413) {
-    return "Photo bahut badi hai. Chhoti image try karo.";
+    return "The photo is too large. Please try a smaller image.";
   }
 
   if (error?.code === "ECONNABORTED") {
-    return "Request timeout ho gaya. Network check karke dobara try karo.";
+    return "The request timed out. Please check your network and try again.";
   }
 
   if (!error?.response) {
-    return "Network issue lag raha hai. Internet ya browser cache check karke dobara try karo.";
+    return "There seems to be a network issue. Please check your internet connection or browser cache and try again.";
   }
 
   return fallbackMessage;

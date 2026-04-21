@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -14,6 +14,7 @@ import SellerDashboard from "./pages/SellerDashboard";
 
 export default function App() {
   const location = useLocation();
+  const user = JSON.parse(localStorage.getItem("user"));
 
   const [cart, setCart] = useState(() => {
     const saved = localStorage.getItem("cart");
@@ -38,7 +39,11 @@ export default function App() {
           path="/cart"
           element={
             <ProtectedRoute>
-              <Cart cart={cart} setCart={setCart} />
+              {user?.role === "seller" ? (
+                <Navigate to="/seller" replace />
+              ) : (
+                <Cart cart={cart} setCart={setCart} />
+              )}
             </ProtectedRoute>
           }
         />

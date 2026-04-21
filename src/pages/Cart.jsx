@@ -44,7 +44,23 @@ export default function Cart({ cart = [], setCart }) {
               className="bg-white p-4 rounded shadow mb-3"
             >
               <p className="font-semibold">{item.name}</p>
+              {item.shopName && (
+                <p className="text-sm text-slate-500">{item.shopName}</p>
+              )}
               <p className="text-green-600">₹{item.price}</p>
+              {item.locationLabel && (
+                <p className="text-sm text-slate-500">{item.locationLabel}</p>
+              )}
+              {typeof item.latitude === "number" && typeof item.longitude === "number" && (
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2 inline-block text-sm font-medium text-sky-600 hover:underline"
+                >
+                  Open shop location in Maps
+                </a>
+              )}
 
               {/* QTY Controls */}
               <div className="flex items-center gap-3 mt-2">
